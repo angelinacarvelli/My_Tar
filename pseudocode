@@ -1,0 +1,66 @@
+FONCTION principal(nombre_arguments, arguments)
+    IF nombre_arguments < 3 ALORS
+        Afficher l'aide ou une erreur sur STDERR
+        return 1
+    end IF
+
+    options <- arguments[1]       // Ex: "-cf"
+    nom_archive <- arguments[2]  // Ex: "archive.tar"
+
+    IF options contient 'c' ALORS
+        // On passe les fichiers à partir de l'argument 3
+        return faire_create(nom_archive, arguments + 3, nombre_arguments - 3)
+    
+    else IF options contient 't' ALORS
+        return faire_list(nom_archive)
+    
+    else IF options contient 'x' ALORS
+        return faire_extract(nom_archive)
+    
+    else
+        Afficher "Option non reconnue" sur STDERR
+        return 1
+    end IF
+end FONCTION
+
+FONCTION faire_create(nom_archive, liste_fichiers, nb_fichiers)
+    open nom_archive en écriture (création + effacement) -> fd_tar
+    IF échec d'ouverture ALORS
+        Afficher "Impossible d'ouvrir l'archive" sur STDERR
+        return 1
+    end IF
+
+    POUR CHAQUE fichier DANS liste_fichiers
+        Récupérer les informations du fichier (taille, permissions) via lstat
+        IF le fichier n'existe pas ALORS
+            Afficher "[fichier]: Cannot stat: No such file or directory" sur STDERR
+            CONTINUER au fichier suivant
+        end IF
+
+        Créer un bloc_en_tete de 512 octets initialisé à 0
+        
+        Remplir bloc_en_tete avec :
+        - Le nom du fichier
+        - Les permissions (mode)
+        - La taille du fichier (convertie en octal)
+        - Le type ('0' pour un fichier normal)
+        - Le checksum (somme de contrôle des octets)
+        - La mention "ustar"
+
+        write bloc_en_tete (512 octets) dans fd_tar
+
+        open le fichier en lecture -> fd_src
+        while on peut lire des blocs du fichier source
+            write les données lues dans fd_tar
+        end while
+        close fd_src
+
+        Calculer le reste de la taille du fichier divisé par 512
+        if reste > 0 ALORS
+            write (512 - reste) octets à zéro dans fd_tar
+        end if
+    for
+
+    write 1024 octets de zéros dans fd_tar
+    close fd_tar
+    return 0
