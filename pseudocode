@@ -64,3 +64,58 @@ FONCTION faire_create(nom_archive, liste_fichiers, nb_fichiers)
     write 1024 octets de zéros dans fd_tar
     close fd_tar
     return 0
+
+    FONCTION faire_list(nom_archive)
+    open nom_archive en lecture -> fd_tar
+    if échec ALORS
+        Afficher erreur sur STDERR
+        return 1
+    end if
+
+    while lire 512 octets dans bloc_en_tete depuis fd_tar == 512
+                                                                                                                                                                   
+        if bloc_en_tete est entièrement vide alors
+            SORTIR de la boucle
+        end if
+
+        Extraire et afficher le nom du fichier depuis bloc_en_tete sur STDOUT
+
+        Extraire la taille du fichier depuis bloc_en_tete
+        
+        Calculer combien de blocs de 512 octets occupent les données de ce fichier
+        Avancer le curseur du fichier (`lseek`) pour sauter le contenu du fichier 
+        et arriver directement à l'en-tête suivant.
+    end while
+
+    close fd_tar
+    return 0
+
+    FONCTION faire_extract(nom_archive)
+    open nom_archive en lecture -> fd_tar
+    if échec ALORS
+        Afficher erreur sur STDERR
+        return 1
+    FIN if
+
+    while lire 512 octets dans bloc_en_tete depuis fd_tar == 512
+        if bloc_en_tete est entièrement vide ALORS
+            SORTIR de la boucle
+        end if
+
+        Extraire le nom, la taille et les permissions du fichier depuis bloc_en_tete
+
+        open/Créer un nouveau fichier avec le nom extrait -> fd_out
+
+        while taille_restante_à_lire > 0
+            read un morceau depuis fd_tar
+            write ce morceau dans fd_out
+            Soustraire les octets écrits de taille_restante_à_lire
+        end while
+        close fd_out
+
+        Calculer le padding (si la taille n'est pas un multiple de 512)
+        if padding > 0, avancer le curseur de `fd_tar` de cette valeur
+    end TANT QUE
+
+    close fd_tar
+    return 0
